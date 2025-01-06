@@ -1,3 +1,3 @@
 # Introduction
 
-CDCX makes working with SQL Server Change Data Capture simpler, and more efficient.
+Extensions to improve performance and developer experience when working SQL Server Change Data Capture.
