@@ -4,7 +4,7 @@
 :on error exit
 
 -- Name of the database containing the source data
-:setvar SOURCE_DB_NAME natlive
+:setvar SOURCE_DB_NAME nat
 
 -- name of the schema in which cdc extensions objects will be created
 :setvar CDCX_SCHEMA_NAME CDCX
@@ -18,7 +18,7 @@ go
 set xact_abort, nocount on;
 go
 declare @db sysname = db_name();
-exec coates_lib.dba.DropAllSchemaObjects @db, '$(CDCX_SCHEMA_NAME)', 1;
+exec cates_lib.dba.DropAllSchemaObjects @db, '$(CDCX_SCHEMA_NAME)', 1;
 go
 
 begin tran;
