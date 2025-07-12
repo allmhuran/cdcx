@@ -334,7 +334,3 @@ go
 
 commit
 go
-
-exec cdcx.setup 'natlive', 'dbo_fleet_fleetmaster'
-go
-
