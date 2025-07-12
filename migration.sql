@@ -1,32 +1,38 @@
-
--- sqlcmd variables
-
 :on error exit
 
+-- Name of the database in which CDCX objects should be created.
+-- The script will attempt to create this database if it does not exist.
+:setvar CDCX_DB_NAME 
+
 -- Name of the database containing the source data
-:setvar SOURCE_DB_NAME nat
+:setvar SOURCE_DB_NAME 
 
 -- name of the schema in which cdc extensions objects will be created
-:setvar CDCX_SCHEMA_NAME CDCX
+:setvar CDCX_SCHEMA_NAME cdcx
 
 go
 
 
-if not exists (select * from sys.databases where name = '$(SOURCE_DB_NAME)') throw 50001, 'Database $(SOURCE_DB_NAME) does not exist', 0;
+-- CDCX DB CREATION -----------------------------------------------------------------------------------------
+if exists(select * from sys.databases where name = '$(CDCX_DB_NAME)') set noexec on;
+go
+create database [$(CDCX_DB_NAME)];
+alter database [$(CDCX_DB_NAME)] set recovery simple;
+alter database [$(CDCX_DB_NAME)] set trustworthy on;
+go
+set noexec off;
+go
+
+use [$(CDCX_DB_NAME)];
 go
 
 set xact_abort, nocount on;
 go
 declare @db sysname = db_name();
-exec cates_lib.dba.DropAllSchemaObjects @db, '$(CDCX_SCHEMA_NAME)', 1;
 go
 
-begin tran;
-go
-
-
--- CDCX -------------------------------------------------------------------------------------------------------
-go
+-- Table valued types are created before the deployment transaction to avoid self-deadlocks.
+-- If deployment fails, these must be cleaned up separately!
 
 if schema_id('$(CDCX_SCHEMA_NAME)') is not null set noexec on;
 go
@@ -35,7 +41,6 @@ go
 set noexec off;
 go
 
-
 if type_id('$(CDCX_SCHEMA_NAME).smallintSet') is not null set noexec on;
 go
 create type [$(CDCX_SCHEMA_NAME)].smallintSet as table (v smallint primary key);
@@ -43,6 +48,12 @@ go
 set noexec off;
 go
 
+if type_id('$(CDCX_SCHEMA_NAME).CdcColumnsOutput') is not null set noexec on;
+go
+create type [$(CDCX_SCHEMA_NAME)].CdcColumnsOutput as table (column_ordinal int, column_name sysname, key_ordinal int)
+go
+set noexec off;
+go
  
 if type_id('$(CDCX_SCHEMA_NAME).sysnameSet') is not null set noexec on;
 go
@@ -52,14 +63,21 @@ set noexec off;
 go
 
 
+
+begin tran;
+go
+
+drop function if exists [$(CDCX_SCHEMA_NAME)].Changed;
 drop table if exists [$(CDCX_SCHEMA_NAME)].integers;
-create table $(CDCX_SCHEMA_NAME).integers(i int primary key clustered);
-insert      $(CDCX_SCHEMA_NAME).integers
+drop function if exists [$(CDCX_SCHEMA_NAME)].MaskFromOrdinals;
+go
+
+create table [$(CDCX_SCHEMA_NAME)].integers(i int primary key clustered);
+insert      [$(CDCX_SCHEMA_NAME)].integers
 select      top 65536 row_number() over (order by o1.object_id) - 1
 from        sys.all_objects o1
 cross join  sys.all_objects o2;
 go
-
 
 create or alter function [$(CDCX_SCHEMA_NAME)].SetBit(@bitPosition smallint, @mask varbinary(128))
 returns varbinary(128) 
@@ -83,7 +101,6 @@ begin
 end;
 go
 
-
 create or alter function [$(CDCX_SCHEMA_NAME)].MaskFromOrdinals(@columnOrdinals [$(CDCX_SCHEMA_NAME)].smallintSet readonly) 
 returns varbinary(128)
 with schemabinding
@@ -100,7 +117,6 @@ begin
    return cast(right(@mask, (@maxOrdinal / 8) + 1) as varbinary(128));
 end
 go
-
 
 create or alter function [$(CDCX_SCHEMA_NAME)].Changed(@operation int, @updateMask varbinary(128), @checkBits varbinary(128))
 returns table 
@@ -121,52 +137,43 @@ return
 )               
 go
 
-
-create or alter procedure [$(CDCX_SCHEMA_NAME)].[Setup.CdcColumns]
+create or alter procedure [$(CDCX_SCHEMA_NAME)].GetCdcColumns
 (
-   @cdcDatabaseName sysname
-) as begin
+   @cdcDbName sysname, 
+   @captureInstanceName sysname, 
+   @ordinalsOnly bit = 1, 
+   @columnNames [$(CDCX_SCHEMA_NAME)].sysNameSet readonly) as
+begin
+   declare @sql nvarchar(max) = N'
+   use [' + @cdcDbName + '];
+   select      cc.column_ordinal ' + iif(@ordinalsOnly = 1, '', ', cc.column_name, ic.key_ordinal') + '
+   from        cdc.change_tables      ct
+   join        cdc.captured_columns   cc  on cc.object_id = ct.object_id '
+   + iif(not exists(select * from @columnNames), '', '
+   join        @columnNames           cn  on cc.column_name = cn.v
+   ') + iif(@ordinalsOnly = 1, '', '
+   left join   sys.indexes            ix  on ix.object_id = ct.source_object_id
+                                             and ix.name = ct.index_name
+   left join   sys.index_columns      ic  on ic.index_id = ix.index_id
+                                             and ic.object_id = ix.object_id
+                                             and ic.column_id = cc.column_id') + '
+   where       ct.capture_instance = @captureInstanceName collate database_default';
 
-   declare @cmd nvarchar(max) = N'
-create or alter function [$(CDCX_SCHEMA_NAME)].[<cdcdb.>CdcColumns](@captureInstanceName sysname) 
-returns table as
-return
-(
-   select      cc.column_name, cc.column_ordinal, ic.key_ordinal
-   from        <[cdcdb].>cdc.change_tables      ct
-   join        <[cdcdb].>cdc.captured_columns   cc on cc.object_id = ct.object_id
-   left join   <[cdcdb].>sys.indexes            ix on ix.object_id = ct.source_object_id
-                                                      and ix.name = ct.index_name
-   left join   <[cdcdb].>sys.index_columns      ic on ic.index_id = ix.index_id
-                                                      and ic.object_id = ix.object_id
-                                                      and ic.column_id = cc.column_id
-   where       ct.capture_instance = @captureInstanceName collate <collation>
-)';
-
-
-   set @cmd = replace(@cmd, '<cdcdb.>', iif(@cdcDatabaseName = db_name(), '', @cdcDatabaseName + '.'));
-   set @cmd = replace(@cmd, '<[cdcdb].>', iif(@cdcDatabaseName = db_name(), '', quotename(@cdcDatabaseName) + '.'));
-   set @cmd = replace(@cmd, '<collation>', (select collation_name from sys.databases where name = @cdcDatabaseName));
-   -- -- print @cmd;
-   exec(@cmd);
+   exec sys.sp_executeSql @sql, N'@captureInstanceName sysname, @columnNames [$(CDCX_SCHEMA_NAME)].SysNameSet readonly', @captureInstanceName, @columnNames;
 end
 go
 
-
-create or alter procedure [$(CDCX_SCHEMA_NAME)].[Setup.GetParams](@cdcDatabaseName sysname) as
-begin
-
-   declare @cmd nvarchar(max) = N'
-create or alter procedure [$(CDCX_SCHEMA_NAME)].[<cdcdb.>GetParams]
+create or alter procedure [$(CDCX_SCHEMA_NAME)].[GetParams]
 (
+   @cdcDbName sysname,
    @captureInstanceName sysname,
-   @columns [$(CDCX_SCHEMA_NAME)].sysnameSet readonly,
+   @columns [cdcx].sysnameSet readonly,
    @previousLastLsn binary(10),
    @mask varbinary(128) = null output,
    @nextStartLsn binary(10) = null output,
    @nextEndLsn binary(10) = null output,
    @changesMissed bit = 0 output
-) with execute as ''dbo'' as 
+) with execute as 'dbo' as 
 begin
    set nocount on;
    
@@ -174,58 +181,45 @@ begin
 
    declare @minLsn binary(10);
 
-   select   @minLsn        = <[cdcdb].>sys.fn_cdc_get_min_lsn(@captureInstanceName), 
-            @nextStartLsn  = <[cdcdb].>sys.fn_cdc_increment_lsn(@previousLastLsn), 
-            @nextEndLsn    = <[cdcdb].>sys.fn_cdc_get_max_lsn();
+   declare @sql nvarchar(max);
+
+   set @sql = N'
+   use [' + @cdcDbName + '];
+   select   @minLsn        = sys.fn_cdc_get_min_lsn(@captureInstanceName), 
+            @nextStartLsn  = sys.fn_cdc_increment_lsn(@previousLastLsn), 
+            @nextEndLsn    = sys.fn_cdc_get_max_lsn();';
+
+   exec sys.sp_executesql 
+      @sql, 
+      N'@captureInstanceName sysname, @previousLastLsn binary(10), @minLsn binary(10) output, @nextStartLsn binary(10) output, @nextEndLsn binary(10) output',
+      @captureInstanceName, @previousLastLsn, @minLsn output, @nextStartLsn output, @nextEndLsn output;
 
    if (@nextStartLsn < @minLsn) select @changesMissed = 1, @nextStartLsn = @minLsn;
    else set @changesMissed = 0;
    
-   declare @ordinals [$(CDCX_SCHEMA_NAME)].smallintSet;
-
-   insert   @ordinals 
-   select   md.column_ordinal 
-   from     [$(CDCX_SCHEMA_NAME)].[<cdcdb.>CdcColumns](@captureInstanceName) md
-   join     @columns c  on c.v = md.column_name collate <collation>;
-
-   if (@@rowcount != (select count(*) from @columns))
+   if (exists(select * from @columns))
    begin
-      declare @err varchar(2048) = ''The following columns were specified but not found: '';
 
-      select      @err = @err + c.v + '' ''
-      from        @columns c
-      left join   [$(CDCX_SCHEMA_NAME)].[<cdcdb.>CdcColumns](@captureInstanceName) md on md.column_name = c.v collate <collation>
-      where       md.column_name is null
-      option      (maxdop 1);
+      declare @ordinals [$(CDCX_SCHEMA_NAME)].smallintSet;
+      insert @ordinals exec [$(CDCX_SCHEMA_NAME)].GetCdcColumns @cdcDbName, @captureInstanceName, 1, @columns
 
-      throw 50001, @err, 0; 
+      if (@@rowcount != (select count(*) from @columns)) throw 50001, 'At least one specified column was not found in the cdc source', 0; 
+      
+      set @mask = [$(CDCX_SCHEMA_NAME)].MaskFromOrdinals(@ordinals);
+
    end
-
-   set @mask = [$(CDCX_SCHEMA_NAME)].MaskFromOrdinals(@ordinals);
-end'
-
-   set @cmd = replace(@cmd, '<collation>', (select collation_name from sys.databases where name = @cdcDatabaseName));
-   set @cmd = replace(@cmd, '<cdcdb.>', iif(@cdcDatabaseName = db_name(), '', @cdcDatabaseName + '.'));
-   set @cmd = replace(@cmd, '<[cdcdb].>', iif(@cdcDatabaseName = db_name(), '', quotename(@cdcDatabaseName) + '.'));
-   -- -- print @cmd;
-   exec(@cmd);
 end
 go
-
 
 create or alter procedure [$(CDCX_SCHEMA_NAME)].[Setup.Net](@cdcDb sysname, @captureInstanceName sysname) as
 begin
    set nocount, xact_abort on;
 
+   declare @cmd nvarchar(max);
+
    begin try
 
       begin tran;
-
-
-      declare @cmd nvarchar(max) = N'
-         drop synonym if exists [$(CDCX_SCHEMA_NAME)].CdcColumns;
-         create synonym [$(CDCX_SCHEMA_NAME)].CdcColumns for [$(CDCX_SCHEMA_NAME)].[' + iif(@cdcDB = db_name(), '', @cdcDb + '.') + 'CdcColumns]';
-      exec(@cmd);
 
       set @cmd = N'
 create or alter function [$(CDCX_SCHEMA_NAME)].[<cdcdb.><instance>.net]
@@ -267,19 +261,29 @@ return
                      and not (changed.cdcx_lastOp = 2 and changed.cdcx_firstOp = 1)
 );';
 
-      declare @keyColumns nvarchar(max) = N'', @separator nvarchar(4) = N', ';   
+      declare 
+         @cols [$(CDCX_SCHEMA_NAME)].CdcColumnsOutput,
+         @keyColumns nvarchar(max) = N'', 
+         @separator nvarchar(4) = N', ',
+         @changeColumns nvarchar(max) = N'';
+
+      insert @cols exec [$(CDCX_SCHEMA_NAME)].GetCdcColumns '$(SOURCE_DB_NAME)', @captureInstanceName, 0, default;
+
+
       select   @keyColumns += quotename(column_name) + @separator
-      from     [$(CDCX_SCHEMA_NAME)].CdcColumns(@captureInstanceName)
+      from     @cols
       where    key_ordinal is not null
       order by key_ordinal asc
       option   (maxdop 1);      
+
       set @keyColumns = left(@keyColumns, len(@keyColumns) - len(@separator));
 
-      declare @changeColumns nvarchar(max) = N'';
+      
       select   @changeColumns += '<$>.' + quotename(column_name) + @separator
-      from     [$(CDCX_SCHEMA_NAME)].CdcColumns(@captureInstanceName)
+      from     @cols
       order by column_ordinal asc
       option   (maxdop 1);
+
       set @changeColumns = left(@changeColumns, len(@changeColumns) - len(@separator));
 
       set @cmd = replace(@cmd, '<keyColumns>', @keyColumns);
@@ -289,17 +293,14 @@ return
       set @cmd = replace(@cmd, '<[cdcdb].>', iif(@cdcDb = db_name(), '', quotename(@cdcDb) + '.'));
       set @cmd = replace(@cmd, '<instance>', @captureInstanceName);
 
-      -- -- print @cmd;
-      exec (@cmd);
-   
-      drop synonym if exists [$(CDCX_SCHEMA_NAME)].CdcColumns;
+      exec (@cmd);  
 
       commit;
       return 0;
 
    end try begin catch
-
-      if (@@trancount > 0) rollback;
+      
+      print cast('@cmd = ' + char(13) + char(10) + @cmd as varchar(max));
       throw;
 
    end catch
@@ -314,10 +315,6 @@ begin
    begin try
 
       begin tran;
-
-      exec [$(CDCX_SCHEMA_NAME)].[Setup.CdcColumns] @cdcDatabaseName;
-
-      exec [$(CDCX_SCHEMA_NAME)].[Setup.GetParams] @cdcDatabaseName;
 
       exec [$(CDCX_SCHEMA_NAME)].[Setup.Net] @cdcDatabaseName, @captureInstanceName;
 
@@ -336,5 +333,8 @@ go
 
 
 commit
+go
+
+exec cdcx.setup 'natlive', 'dbo_fleet_fleetmaster'
 go
 
