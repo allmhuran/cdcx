@@ -2,7 +2,7 @@
 
 -- Name of the database in which CDCX objects should be created.
 -- The script will attempt to create this database if it does not exist.
-:setvar CDCX_DB_NAME 
+:setvar CDCX_DB_NAME integration
 
 -- name of the schema in which cdc extensions objects will be created
 :setvar CDCX_SCHEMA_NAME cdcx
@@ -328,7 +328,8 @@ begin
 end
 go
 
-create or alter procedure [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns] 
+
+create or alter procedure [cdcx].[sys.AddCaptureInstanceColumns] 
 (
    @cdcDatabaseName sysname,
    @captureInstanceName sysname,
@@ -351,9 +352,7 @@ as begin
          @startLsn binary(10),
          @oldColumns nvarchar(max),
          @newColumns nvarchar(max),
-         @query nvarchar (max);      
-         
-      -- gather existing cdc metadata
+         @query nvarchar (max);                    
 
       create table #info
       (
@@ -374,6 +373,9 @@ as begin
          captured_column_list nvarchar(max)
       )
 
+      ------------------------------------------------------------------------------------------------------------------------------------
+      print 'gathering existing cdc metadata';
+
       set @query = concat('[', @cdcDatabaseName, '].sys.sp_cdc_help_change_data_capture');
       insert #info exec (@query);    
 
@@ -391,15 +393,18 @@ as begin
 
       if (@@rowcount != 1) throw 50001, 'capture instance not found', 1;
 
-      -- back up existing cdc data
+      ------------------------------------------------------------------------------------------------------------------------------------
+      print 'backing up existing cdc data';
 
-      drop table if exists [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns.Backup];
+      drop table if exists [cdcx].[sys.AddCaptureInstanceColumns.Backup];
 
-      set @query = concat('select * into [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns.Backup] from [', @cdcDatabaseName, '].cdc.[', @captureInstanceName, '_CT] with (tablockx)');
+      set @query = concat('select * into [cdcx].[sys.AddCaptureInstanceColumns.Backup] from [', @cdcDatabaseName, '].cdc.[', @captureInstanceName, '_CT]');
       exec (@query);
+
       print concat('backed up ', @@rowcount, ' rows');
       
-      -- disable the existing capture instance
+      ------------------------------------------------------------------------------------------------------------------------------------
+      print 'disabling existing capture instance';
 
       set @query = N'exec [' + @cdcDatabaseName + N'].sys.sp_cdc_disable_table @schema, @table, @instance';
       exec sys.sp_executeSql 
@@ -407,11 +412,13 @@ as begin
          N'@schema sysname, @table sysname, @instance sysname', 
          @schema, @table, @captureInstanceName;
       
-      -- give CDC some time to see change
+      ------------------------------------------------------------------------------------------------------------------------------------
+      print 'waiting for CDC to catch up';
 
-      waitfor delay '00:00:10';
-      
-      -- re-enable the table for cdc using the same parameters as it originally had, plus the extra columns
+      waitfor delay '00:00:10';      
+
+      ------------------------------------------------------------------------------------------------------------------------------------
+      print 're-enableing cdc with additional columns';
 
       set @query = N'exec [' + @cdcDatabaseName + '].sys.sp_cdc_enable_table
          @source_schema = @schema,
@@ -428,18 +435,20 @@ as begin
          N'@schema sysname, @table sysname, @captureInstanceName sysname, @net bit, @role sysname, @index sysname, @newColumns nvarchar(max), @filegroup sysname',
          @schema, @table, @captureInstanceName, @net, @role, @index, @newColumns, @filegroup;
 
-      -- restore the cdc data from backup
+      ------------------------------------------------------------------------------------------------------------------------------------
+      print 'restoring cdc data from backup';
 
       set @query = concat
       (
          ' insert [', @cdcDatabaseName, '].cdc.[', @captureInstanceName, '_CT] ',
          ' (__$start_lsn, __$end_lsn, __$seqval, __$operation, __$update_mask, __$command_id, ', @oldColumns, ') ',
          ' select __$start_lsn, __$end_lsn, __$seqval, __$operation, __$update_mask, __$command_id,', @oldColumns, 
-         ' from [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns.Backup]'
+         ' from [cdcx].[sys.AddCaptureInstanceColumns.Backup]'
       );
       exec (@query);
 
-      -- reset the start lsn
+      ------------------------------------------------------------------------------------------------------------------------------------
+      print 'resetting start lsn';
 
       set @query = concat
       (
@@ -458,8 +467,7 @@ as begin
    end catch
       
 end
-go
-
+GO
 
 commit
 go
