@@ -1,3 +1,4 @@
+
 :on error exit
 
 -- Name of the database in which CDCX objects should be created.
@@ -328,8 +329,36 @@ begin
 end
 go
 
+create or alter function [$(CDCX_SCHEMA_NAME)].[Split](@string nvarchar(max), @terminator nvarchar(255)) returns table as
+return 
+(
+	select		stringIndex    =  row_number() over (order by i),
+					firstCharIndex =  i + ((row_number() over (order by i) - 1) * (len(@terminator) - 1)),
+					string         =  ltrim
+                                 (
+                                    rtrim
+                                    (
+                                       substring
+                                       (
+                                          nchar(1) + replace(@string, @terminator, nchar(1)) + nchar(1), 
+                                          i + 1, 
+                                          charindex
+                                          (
+                                             nchar(1), 
+                                             nchar(1) + replace(@string, @terminator, nchar(1)) + nchar(1),
+                                             i + 1
+                                          ) - (i + 1)
+                                       )
+                                    )
+                                 )
+		from		cdcx.integers
+		where		i < len(replace(@string, @terminator, nchar(0))) + 1
+		         and substring(nchar(1) + replace(@string, @terminator, nchar(1)) + nchar(1), i, 1) = nchar(1)
+)
+go
 
-create or alter procedure [cdcx].[sys.AddCaptureInstanceColumns] 
+
+create or alter procedure [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns] 
 (
    @cdcDatabaseName sysname,
    @captureInstanceName sysname,
@@ -393,12 +422,20 @@ as begin
 
       if (@@rowcount != 1) throw 50001, 'capture instance not found', 1;
 
+      print 'checking column validity';
+
+      select   duplicateColumnName = nc.string
+      from     [$(CDCX_SCHEMA_NAME)].Split(@commaSeparatedColumnNamesToAdd, ',') nc
+      join     [$(CDCX_SCHEMA_NAME)].Split(@oldColumns, ',')                     oc on oc.string = quotename(nc.string);
+
+      if (@@rowcount > 0) throw 50001, 'Attempting to add columns that are already captured. See results window.', 1;      
+
       ------------------------------------------------------------------------------------------------------------------------------------
       print 'backing up existing cdc data';
 
-      drop table if exists [cdcx].[sys.AddCaptureInstanceColumns.Backup];
+      drop table if exists [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns.Backup];
 
-      set @query = concat('select * into [cdcx].[sys.AddCaptureInstanceColumns.Backup] from [', @cdcDatabaseName, '].cdc.[', @captureInstanceName, '_CT]');
+      set @query = concat('select * into [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns.Backup] from [', @cdcDatabaseName, '].cdc.[', @captureInstanceName, '_CT]');
       exec (@query);
 
       print concat('backed up ', @@rowcount, ' rows');
@@ -443,18 +480,15 @@ as begin
          ' insert [', @cdcDatabaseName, '].cdc.[', @captureInstanceName, '_CT] ',
          ' (__$start_lsn, __$end_lsn, __$seqval, __$operation, __$update_mask, __$command_id, ', @oldColumns, ') ',
          ' select __$start_lsn, __$end_lsn, __$seqval, __$operation, __$update_mask, __$command_id,', @oldColumns, 
-         ' from [cdcx].[sys.AddCaptureInstanceColumns.Backup]'
+         ' from [$(CDCX_SCHEMA_NAME)].[sys.AddCaptureInstanceColumns.Backup]'
       );
       exec (@query);
 
       ------------------------------------------------------------------------------------------------------------------------------------
       print 'resetting start lsn';
 
-      set @query = concat
-      (
-         'update [', @cdcDatabaseName, '].cdc.change_tables set start_lsn = ', @startLsn, ' where capture_instance = ''', @captureInstanceName, ''''
-      );
-      exec (@query);
+      set @query = N'update [' + @cdcDatabaseName + '].cdc.change_tables set start_lsn = @startLsn where capture_instance = @captureInstanceName';
+      exec sys.sp_executeSql @query, N'@startLsn binary(10), @captureInstanceName sysname', @startLsn, @captureInstanceName;
 
       commit;
       return 0;
@@ -467,8 +501,9 @@ as begin
    end catch
       
 end
-GO
-
+go
 commit
 go
+
+
 
