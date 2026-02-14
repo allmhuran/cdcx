@@ -1,3 +1,5 @@
+--exec cdcx.[setup.uninstall] 'cdcx'
+
 -- CDCX SETUP
 :on error exit
 
@@ -6,7 +8,7 @@
 :setvar CDCX_DB_NAME 
 
 -- name of the schema in which cdc extensions objects will be created
-:setvar CDCX_SCHEMA_NAME 
+:setvar CDCX_SCHEMA_NAME cdcx
 
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -327,8 +329,8 @@ as begin
    where       sc.name = '$(CDCX_SCHEMA_NAME)'               
                and sy.name like concat(@dbAlias, '.%');
 
-   if (@count = 0) set @err = 'No database references found for alias "' + @dbAlias + '". Check sys.synonyms and/or re-run [$(CDCX_SCHEMA_NAME)].[Setup]';
-   else if (@count > 1) set @err = 'Multiple database references found for alias "' + @dbAlias + '". Check sys.synonyms and/or re-run [$(CDCX_SCHEMA_NAME)].[Setup]';
+   if (@count = 0) set @err = object_name(@@procid) + ':No database references found for alias "' + @dbAlias + '". Check sys.synonyms and/or re-run [$(CDCX_SCHEMA_NAME)].[Setup]';
+   else if (@count > 1) set @err = object_name(@@procid) + ':Multiple database references found for alias "' + @dbAlias + '". Check sys.synonyms and/or re-run [$(CDCX_SCHEMA_NAME)].[Setup]';
 
    if (@err is not null) throw 50001, @err, 1;
 end
@@ -362,13 +364,13 @@ return
                cc.column_ordinal,               
                ic.key_ordinal,
                change_table = tt.name
-   from        [$(CDCX_SCHEMA_NAME)].[dbAlias?.cdc.change_tables]         ct
-   join        [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.tables]                ta on ta.object_id = ct.source_object_id
-   join        [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.schemas]               sc on sc.schema_id = ta.schema_id
-   join        [$(CDCX_SCHEMA_NAME)].[dbAlias?.cdc.captured_columns]      cc on cc.object_id = ct.object_id
-   left join   [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.indexes]               ix on @getKeyOrdinals = 1 and ix.object_id = ct.source_object_id and ix.name = ct.index_name
-   left join   [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.index_columns]         ic on @getKeyOrdinals = 1 and ic.index_id = ix.index_id and ic.object_id = ix.object_id and ic.column_id = cc.column_id
-   left join   [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.tables]                tt on tt.object_id = ct.object_id
+   from        [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.change_tables]         ct
+   join        [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.tables]                ta on ta.object_id = ct.source_object_id
+   join        [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.schemas]               sc on sc.schema_id = ta.schema_id
+   join        [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.captured_columns]      cc on cc.object_id = ct.object_id
+   left join   [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.indexes]               ix on @getKeyOrdinals = 1 and ix.object_id = ct.source_object_id and ix.name = ct.index_name
+   left join   [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.index_columns]         ic on @getKeyOrdinals = 1 and ic.index_id = ix.index_id and ic.object_id = ix.object_id and ic.column_id = cc.column_id
+   left join   [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.tables]                tt on tt.object_id = ct.object_id
    left join   @columnNames cn on cc.column_name = cn.v
    where       sc.name = @schemaName collate database_default
                and ta.name = @tableName collate database_default
@@ -376,7 +378,7 @@ return
    
 )';
 
-   set @query = replace(@query, 'dbAlias?', @dbAlias);
+   set @query = replace(@query, '@dbAlias?', @dbAlias);
    exec (@query);
 end
 go
@@ -550,7 +552,7 @@ begin
          set @changeTable1 = (select top 1 change_table from [$(CDCX_SCHEMA_NAME)].[@dbAlias?.ColumnOrdinals](@schemaName, @tableName, 0, @c) where captureInstanceOrder = 1);
          set @changeTable2 = (select top 1 change_table from [$(CDCX_SCHEMA_NAME)].[@dbAlias?.ColumnOrdinals](@schemaName, @tableName, 0, @c) where captureInstanceOrder = 2);';
 
-      set @ddl = replace(@ddl, 'dbAlias?', @dbAlias);
+      set @ddl = replace(@ddl, '@dbAlias?', @dbAlias);
 
       declare @changeTable1 sysname, @changeTable2 sysname;
       exec sp_executeSql 
@@ -562,7 +564,7 @@ begin
          drop synonym if exists [$(CDCX_SCHEMA_NAME)].[@dbAlias?.@schemaName?.@tableName?];
          drop synonym if exists [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.changeTables.@schemaName?.@tableName?.1];
          drop synonym if exists [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.changeTables.@schemaName?.@tableName?.2];
-         create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.@schemaName?.@tableName?] for @dbName?.[@schemaName?].[@tableName?];
+         create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.@schemaName?.@tableName?] for @dbName?[@schemaName?].[@tableName?];
          create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.changeTables.@schemaName?.@tableName?.1] for @dbName?cdc.[@changeTable1?];
       ';
 
@@ -581,10 +583,10 @@ begin
       return 0;
 
    end try begin catch
-
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
       if (@@trancount > 0) rollback;
       select setup_tableSynonyms_ddl = [$(CDCX_SCHEMA_NAME)].XmlString(@ddl);
-      throw;
+      throw 50001, @err, 1;
 
    end catch
 
@@ -711,10 +713,10 @@ return
       return 0;
 
    end try begin catch
-
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
       if (@@trancount > 0) rollback;
       select failedDDL = [$(CDCX_SCHEMA_NAME)].XmlString(@ddl);
-      throw;
+      throw 50001, @err, 1;
 
    end catch
 
@@ -825,10 +827,10 @@ return
       return 0;
 
    end try begin catch
-
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
       if (@@trancount > 0) rollback;
       select failed_net_DDL = [$(CDCX_SCHEMA_NAME)].XmlString(@ddl);
-      throw;
+      throw 50001, @err, 1;
 
    end catch
 
@@ -840,7 +842,7 @@ begin
    set xact_abort, nocount on;
 
    declare @ddl nvarchar(max) = N'
-create or alter procedure [$(CDCX_SCHEMA_NAME)].[dbAlias?.GetParams]
+create or alter procedure [$(CDCX_SCHEMA_NAME)].[@dbAlias?.GetParams]
 (
    @schemaName sysname,
    @tableName sysname,
@@ -866,12 +868,12 @@ begin
    set @previousEndLsn = isnull(@previousEndLsn, 0x0);  
 
    select   @minLsn        =  min(start_lsn), 
-            @startLsn      =  [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.fn_cdc_increment_lsn](@previousEndLsn),
-            @endLsn        =  [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.fn_cdc_get_max_lsn](),
+            @startLsn      =  [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.fn_cdc_increment_lsn](@previousEndLsn),
+            @endLsn        =  [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.fn_cdc_get_max_lsn](),
             @instanceCount =  count(distinct capture_instance)
-   from     [$(CDCX_SCHEMA_NAME)].[dbAlias?.cdc.change_tables]   ct
-   join     [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.tables]          tb on tb.object_id = ct.source_object_id
-   join     [$(CDCX_SCHEMA_NAME)].[dbAlias?.sys.schemas]         sc on sc.schema_id = tb.schema_id
+   from     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.change_tables]   ct
+   join     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.tables]          tb on tb.object_id = ct.source_object_id
+   join     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.schemas]         sc on sc.schema_id = tb.schema_id
    where    sc.name = @schemaName
             and tb.name = @tableName;
       
@@ -888,7 +890,7 @@ begin
 
       insert   @ordinals
       select   column_ordinal
-      from     [$(CDCX_SCHEMA_NAME)].[dbAlias?.ColumnOrdinals](@schemaName, @tableName, 1, @columns) 
+      from     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.ColumnOrdinals](@schemaName, @tableName, 1, @columns) 
       where    captureInstanceOrder = 1;
 
       set @mask1 = [$(CDCX_SCHEMA_NAME)].MaskFromOrdinals(@ordinals);
@@ -902,7 +904,7 @@ begin
 
          insert   @ordinals
          select   column_ordinal
-         from     [$(CDCX_SCHEMA_NAME)].[dbAlias?.ColumnOrdinals](@schemaName, @tableName, 1, @columns) 
+         from     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.ColumnOrdinals](@schemaName, @tableName, 1, @columns) 
          where    captureInstanceOrder = 2;
 
          set @mask2 = [$(CDCX_SCHEMA_NAME)].MaskFromOrdinals(@ordinals);
@@ -910,7 +912,7 @@ begin
    end
 end';
 
-   set @ddl = replace(@ddl, 'dbAlias?', @dbAlias);
+   set @ddl = replace(@ddl, '@dbAlias?', @dbAlias);
    
    begin try
 
@@ -920,10 +922,10 @@ end';
       return 0;
 
    end try begin catch
-
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
       if (@@trancount > 0) rollback;
       select failed_setup_getparams = [$(CDCX_SCHEMA_NAME)].XmlString(@ddl);
-      throw;
+      throw 50001, @err, 1;
 
    end catch
 end
@@ -984,10 +986,10 @@ end';
       return 0;
 
    end try begin catch
-
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
       if (@@trancount > 0) rollback;
       select failed_setupgetparamsbylist_ddl = [$(CDCX_SCHEMA_NAME)].XmlString(@ddl);
-      throw;
+      throw 50001, @err, 1;
 
    end catch
 end
@@ -1020,7 +1022,7 @@ drop synonym if exists [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.fn_cdc_increment_lsn
 drop synonym if exists [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.fn_cdc_get_max_lsn];
 create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.Schemas] for @db?sys.schemas;
 create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.Tables] for @db?sys.tables;
-create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.Columns] for @db?.sys.columns;
+create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.Columns] for @db?sys.columns;
 create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.Change_tables] for @db?cdc.change_tables;
 create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.Captured_columns] for @db?cdc.captured_columns;
 create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.Indexes] for @db?sys.indexes;
@@ -1040,10 +1042,10 @@ create synonym [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.fn_cdc_get_max_lsn] for @db?
       return 0;
 
    end try begin catch
-
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
       if (@@trancount > 0) rollback
       select setup_synonyms_failed_ddl = [$(CDCX_SCHEMA_NAME)].XmlString(@ddl);
-      throw;
+      throw 50001, @err, 1;
 
    end catch
 
@@ -1087,9 +1089,9 @@ begin
       return 0;
 
    end try begin catch
-
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
       if (@@trancount > 0) rollback;
-      throw;
+      throw 50001, @err, 1;
 
    end catch
 end
@@ -1155,9 +1157,9 @@ begin
       return 0;
 
    end try begin catch
-      
-      if (@@trancount > 0) rollback;
-      throw;
+      declare @err nvarchar(2048) = object_name(@@procid) + ':' + error_message();
+      if (@@trancount > 0) rollback;   
+      throw 50001, @err, 1
 
    end catch      
 end
