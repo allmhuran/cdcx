@@ -40,7 +40,7 @@ A name that will be used throughout CDCX objects when referring to the database 
 
 `@cdcDbName (sysname = null)` :
 <ul>
-The name of the cdc-enabled database to which you want to refer. If the cdc-enabled database is the same database into which you ran cdcx_setup.sql, you do not have to pass this parameter.
+The name of the cdc-enabled database to which you want to refer. If the cdc-enabled database is the current database you do not have to pass this parameter.
 </ul>
 
 ### Notes 
