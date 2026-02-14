@@ -35,7 +35,7 @@ First `exec cdcx.[Setup.Database] @dbAlias, @cdcDbName`
 
 `@dbAlias (sysname)` :
 <ul>
-A name that will be used throughout CDCX objects when referring to the database containing CDC objects you want CDCX to help you with. This alias ensures consistent cdcx object names even if your CDC enabled database has different names in different environments, or you want to track the same database in which you ran cdcx_setup.sql.
+A name that will be used throughout CDCX objects when referring to the database containing CDC objects you want CDCX to help you with. This alias ensures consistent cdcx object names even if your CDC enabled database has different names in different environments.
 </ul>
 
 `@cdcDbName (sysname = null)` :
