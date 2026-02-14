@@ -13,8 +13,10 @@ After cdcx_setup.sql has been executed, you can use the "Setup" objects it creat
 First run `cdcx.[Setup.Database](@dbAlias sysname, @cdcDbName sysname = null)`.
 
 `@dbAlias`\
-: A name that will be used throughout CDCX objects when referring to the database containing CDC objects you want CDCX to help you with.\
+<ul>
+A name that will be used throughout CDCX objects when referring to the database containing CDC objects you want CDCX to help you with.
 This alias ensures consistent cdcx object names even if your CDC enabled database has different names in different environments, or you want to track the same database in which you ran cdcx_setup.sql.
+</ul>
 
 `@cdcDbName` : \
 &nbsp;The name of the cdc-enabled database to which you want to refer.\
