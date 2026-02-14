@@ -47,7 +47,7 @@ Once you have run `cdcx.[Setup.Database]`, you can then run `cdcx.[Setup.Table]`
 
 `@dbAlias (sysname)` :
 <ul>
-The alias used when you executed `[Setup.Database]`
+The alias used when you executed [Setup.Database]
 </ul>
 
 `@schemaName (sysname)` :
