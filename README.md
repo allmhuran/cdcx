@@ -2,6 +2,15 @@
 
 Extensions to improve performance and developer experience when working SQL Server Change Data Capture.
 
+# What it does
+
+CDCX provides an alternative to using the microsoft `fn_cdc_get_all_changes...` and `fn_cdc_get_net_changes...` functions when reading data from change data capture.
+
+The CDCX implementation is significantly faster than the microsoft implementation (about 2 times faster for small data sets, and at least 5 faster for large data sets).
+
+It also provides a much more convenient way of specifying the "columns you care about". With the microsoft implementation you must `fn_cdc_is_bit_set(fn_cdc_get_column_ordinal
+
+
 # Installation
 
 cdcx_setup.sql creates a "library" of objects in a database and schema of your choosing.\
