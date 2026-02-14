@@ -36,6 +36,6 @@ For example, if you installed cdcx into "databaseA", and you want to use cdcx to
 
 ```sql
 use databaseA;
-exec cdcx.[Setup.Database] 'this'; -- this will create necessary references to cdc objects in databaseA;
-exec cdcx.[Setup.Database] 'B', 'databaseB';
+exec cdcx.[Setup.Database] 'this'; --  Will create syonyms required by cdcx for objects which exist in databaseA;
+exec cdcx.[Setup.Database] 'B', 'databaseB'; -- will create synonyms required by cdcx for objects which exist in databaseB;
 ```
