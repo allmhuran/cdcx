@@ -58,7 +58,9 @@ exec cdcx.[Setup.Database] 'B', 'databaseB'; -- will create synonyms required by
 ```
 ---
 
-Once you have run `cdcx.[Setup.Database]`, you can then run `cdcx.[Setup.Table]` for any table being tracked by CDC:
+## Setting up CDCX for a Particular Source Table
+
+Once you have run `cdcx.[Setup.Database]`, you can then run `cdcx.[Setup.Table]` for any table in that database which is being tracked by CDC:
 
 `exec cdcx.[Setup.Table] @dbAlias, @schemaName, @tableName;`
 
