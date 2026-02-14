@@ -172,3 +172,28 @@ If your input @previousEndLsn represents a point that is no longer available in 
 This output parameter provides you with a notification that this has happened, so you can take corrective action if needed.
 </ul>
 
+# Example
+
+Given...
+- A table `MyDatabase.dbo.T(i int primary key clustered, j int, k int, l)` in a database called `MyDb`.
+- This table is enabled for change data capture.
+- The table has two capture instances. The first capture instance is tracking columns j and k, the second capture instance is tracking columns j, k, and l.
+- You want to use CDCX to help get changes from this table for any changes to column j or k.
+
+```sql
+-- first run setup_cdcx.sql in a databse of your choosing. For this example we will assume you use the schema name cdcx for the cdcx objects, then...
+exec cdcx.[Setup.Database] 'MyAlias', 'MyDb';
+
+exec cdcx.[Setup.Table] 'MyAlias', 'dbo', 'T';
+|
+- in this example I will pass 0x0 as the "previous end LSN".
+declare @startLsn binary(10), @endLsn binary(10), @mask1 varbinary(128), @mask2 varbinary(128), @changesMIssed bit;
+exec cdcx.[MyAlias.GetParams] 'dbo', 't', 0x0, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output; -
+
+-- cdcx_deleted it a bit column; it will be 1 if the net change to the row is a deletion.
+-- You can also include any valid column in the source table in your select, even if it's not being tracked by CDC.
+-- Cdcx will return nulls for columns that are unavailable in CDC.
+select  cdcx_deleted, i, j, k 
+from    cdcx.[MyAlias.dbo.T.Net](@startLsn, @endLsn, @mask1, @mask2)
+option  (recompile); -- recommended
+```
