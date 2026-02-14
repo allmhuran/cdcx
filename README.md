@@ -107,8 +107,9 @@ Changes will only be returned for changes that involve this/these columns.
 If a second capture table does not exist, this parameter can be `null`.
 </ul>
 
-**You might be thinking that you still have to worry about validating your LSN range. And how do you get the value for `@mask1`? And how do you know whether you need a value for `@mask2`, and how do you get that?**\
-Enter `GetParams`.
+**You might be thinking that you still have to worry about validating your LSN range. And how do you get the value for `@mask1`? And how do you know whether you need a value for `@mask2`, and how do you get that?**
+
+**Enter `GetParams`...**
 
 ## `exec cdcx.[<your database alias>.GetParams] @schemaName, @tableName, @columns, @previousEndLsn, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output`
 
