@@ -100,14 +100,22 @@ The last LSN, inclusive, from which changes in the CDC change table (or tables) 
 `@mask1 (varbinary(128)) = null` :
 <ul>
 A bitmask which specifiefs which columns you "care about" in the first capture table. Changes will only be returned for changes that involve this/these columns.
+Passing null for this parameter will get all changes (not filtered to changes to specific columns).
 </ul>
 
 `@mask2 (varbinary(128)) = null` :
 <ul>
 A bitmask which specifiefs which columns you "care about" in the second capture table (if a second capture table exists). 
 Changes will only be returned for changes that involve this/these columns.
-If a second capture table does not exist, this parameter can be `null`.
+Passing null for this parameter will get all changes (not filtered to changes to specific columns).
+This parameter has no effect if there is only one capture instance for the source table.
 </ul>
+
+### Notes 
+
+- You can run `cdcx.[Setup.Table]` multiple times with the same arguments with no ill-effects (it is idempotent).
+- If you change the underlying table schema or the underlying CDC schema (eg, you create a second capture instance with more tracked columns, or you delete a column fro the source table), just re-run `ccx.[Setup.Table]`.
+
 
 **You might be thinking that you still have to worry about validating your LSN range. And how do you get the value for `@mask1`? And how do you know whether you need a value for `@mask2`, and how do you get that?**
 
@@ -152,7 +160,7 @@ A bitmask representing the columns you care about. Use as the input @mask1 value
 
 `@mask2 (varbinary(128) output)` :
 <ul>
-A bitmask representing the columns you care about. Use as the input @mask2 value for your next call to cdcx .Changes or .Net. Passing null for this parameter will get all changes (not filtered to changes to specific columns).
+A bitmask representing the columns you care about. Use as the input @mask2 value for your next call to cdcx .Changes or .Net.
 (If there is only one capture instance this parameter isn't needed. But you don't need to know that. Just call GetParams and hand off the output values to .Changes or .Net!)
 </ul>
 
