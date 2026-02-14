@@ -147,12 +147,12 @@ This output paramter provides a new high watermark. Use as the input @endLsn val
 
 `@mask1 (varbinary(128) output)` :
 <ul>
-A bitmask representing the columns you care about. Use as the input @mask1 value for your next call to cdcx .Changes or .Net.
+A bitmask representing the columns you care about. Use as the input @mask1 value for your next call to cdcx .Changes or .Net. Passing null for this parameter will get all changes (not filtered to changes to specific columns).
 </ul>
 
 `@mask2 (varbinary(128) output)` :
 <ul>
-A bitmask representing the columns you care about. Use as the input @mask2 value for your next call to cdcx .Changes or .Net.
+A bitmask representing the columns you care about. Use as the input @mask2 value for your next call to cdcx .Changes or .Net. Passing null for this parameter will get all changes (not filtered to changes to specific columns).
 (If there is only one capture instance this parameter isn't needed. But you don't need to know that. Just call GetParams and hand off the output values to .Changes or .Net!)
 </ul>
 
