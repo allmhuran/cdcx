@@ -130,7 +130,7 @@ A table valued parameter containing the column names you care about. (Note: you 
 
 `@previousEndLsn (binary(10))` :
 <ul>
-Where are you up to? This should be the same as the value of a previous @endLsn (normal sliding window semantics). CDCX will bounds-check this for you.
+Where are you up to? This should be the same as the value of a previous @endLsn. CDCX will bounds-check this for you.
 </ul>
 
 `@startLsn (binary(10) output)` :
