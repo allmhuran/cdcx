@@ -8,8 +8,8 @@ CDCX provides an alternative to using the microsoft `fn_cdc_get_all_changes...` 
 
 The CDCX implementation is significantly faster than the microsoft implementation (~2 times faster at ~10,000 rows, ~5 times faster at ~100,000 rows, ~10 times faster at ~1,000,000 rows).
 
-It also provides a much more convenient way of specifying the "columns you care about". With the microsoft implementation you must `fn_cdc_is_bit_set(fn_cdc_get_column_ordinal(...`.\
-In the CDCX approach you use a helper procedure to create a bitmask reprsenting columns you care about, and pass that into the `.Changes` or `.Net` function as a parameter.
+It also provides a much more convenient way of specifying the "columns you care about". With the microsoft implementation you must `or` together `fn_cdc_is_bit_set(fn_cdc_get_column_ordinal(...` for every column you care about.\
+In the CDCX approach you use a helper procedure to create a bitmask reprsenting columns you care about, and pass that into the `.Changes` or `.Net` function as a parameter. CDCX will also validate the column names you specify (MS does not).
 
 CDCX also provides a convenient an efficient way to get the "before" values of columns. The CDCX `.Net` implementation returns the `__$start_lsn`, `__$operation` and `__$seqval` of the "before" version of the net change. Just join `.Net` to `.Changes` and select the "before" values for columns you're interested in, on the same output row as the "after" values.
 
