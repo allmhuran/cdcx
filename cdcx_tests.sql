@@ -1,4 +1,3 @@
--- CDCX TESTS
 
 -- Name of the database in which CDCX objects were created
 :setvar CDCX_DB_NAME 
