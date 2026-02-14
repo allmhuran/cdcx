@@ -13,7 +13,7 @@ After cdcx_setup.sql has been executed, you can use the "Setup" objects it creat
 First run `cdcx.[Setup.Database](@dbAlias sysname, @cdcDbName sysname = null)`.
 
 term
-: definition<br/>
+: definitiondafdaaaaaaaaaaaaaaaaaaaaaaaaadefinitiondafdaaaaaaaaaaaaaaaaaaaaaaaaadefinitiondafdaaaaaaaaaaaaaaaaaaaaaaaaadefinitiondafdaaaaaaaaaaaaaaaaaaaaaaaaadefinitiondafdaaaaaaaaaaaaaaaaaaaaaaaaadefinitiondafdaaaaaaaaaaaaaaaaaaaaaaaaadefinitiondafdaaaaaaaaaaaaaaaaaaaaaaaaadefinitiondafdaaaaaaaaaaaaaaaaaaaaaaaaa
 more definition
 
 `@dbAlias` : <br/>
