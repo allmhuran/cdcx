@@ -29,7 +29,9 @@ Given...
 - You want to use CDCX to help get changes from this table for any changes to column j or k.
 
 ```sql
--- first run setup_cdcx.sql in a databse of your choosing. For this example we will assume you use the schema name cdcx for the cdcx objects, then...
+-- first run setup_cdcx.sql in a databse of your choosing.
+-- For this example we will assume you use the schema name cdcx for the cdcx objects, then...
+
 exec cdcx.[Setup.Database] 'MyAlias', 'MyDb';
 
 exec cdcx.[Setup.Table] 'MyAlias', 'dbo', 'T';
