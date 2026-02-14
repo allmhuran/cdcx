@@ -29,7 +29,7 @@ A default value of "CDCX" is already provided for `CDCX_SCHEMA_NAME`, but you ca
 
 After `cdcx_setup.sql` has been executed, you can use the "Setup" procedures it created to start creating CDCX helpers for change data capture tables in this, or other, databases.
 
----
+## Setting up CDCX to Point to a CDC-Enabled Database
 
 First `exec cdcx.[Setup.Database] @dbAlias, @cdcDbName`
 
