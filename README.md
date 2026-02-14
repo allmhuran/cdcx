@@ -13,7 +13,7 @@ In the CDCX approach you use a helper procedure to create a bitmask reprsenting 
 
 Since CDCX is a layer of abstraction over change data capture, it is also able to make changes to CDC relatively transparent.
 
-For example, suppose you needed to alter the columns being tracked by CDC. To do this you must create a second capture instance. In the MS implementation, you now have to change all of the code that was using `get_net_changes`, to instead refer to the other capture instance (or both), and once you don't need the old capture instance any more, you need to change all of your code *again*.
+For example, suppose you needed to alter the columns being tracked by CDC. To do this you must create a second capture instance. In the MS implementation, you now have to change all of the code that was using `get_net_changes` to instead refer to the other capture instance (or both), and once you don't need the old capture instance any more, you need to change all of your code *again*.
 
 In the CDCX implementation, all of this is handled for you. One capture instance? Two capture instances? Different columns on each capture instance? No problem. CDCX hides all of that and automatically combines changes from both capture instances via a single, stable, interface. **No changes are required to code that depends on CDCX!**
 
