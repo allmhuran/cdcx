@@ -111,9 +111,9 @@ If a second capture table does not exist, this parameter can be `null`.
 
 **Enter `GetParams`...**
 
-## `exec cdcx.[<your database alias>.GetParams] @schemaName, @tableName, @columns, @previousEndLsn, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output`
+## `exec cdcx.[<your database alias>.GetParams] @schemaName, @tableName, @columns, @previousEndLsn, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output;`
 
-`@schemaBale (sysname)` :
+`@schemaName (sysname)` :
 <ul>
 The schema name of the cdc enabled source table
 </ul>
