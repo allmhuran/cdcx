@@ -31,7 +31,7 @@ After `cdcx_setup.sql` has been executed, you can use the "Setup" procedures it 
 
 ## Setting up CDCX to Point to a CDC-Enabled Database
 
-First `exec cdcx.[Setup.Database] @dbAlias, @cdcDbName`
+### `cdcx.[Setup.Database] @dbAlias, @cdcDbName`
 
 `@dbAlias (sysname)` :
 <ul>
@@ -62,7 +62,7 @@ exec cdcx.[Setup.Database] 'B', 'databaseB'; -- will create synonyms required by
 
 Once you have run `cdcx.[Setup.Database]`, you can then run `cdcx.[Setup.Table]` for any table in that database which is being tracked by CDC:
 
-`exec cdcx.[Setup.Table] @dbAlias, @schemaName, @tableName;`
+### `cdcx.[Setup.Table] @dbAlias, @schemaName, @tableName;`
 
 `@dbAlias (sysname)` :
 <ul>
