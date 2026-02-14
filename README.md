@@ -53,6 +53,7 @@ For example, if you installed cdcx into "databaseA", and you want to use cdcx to
 ```sql
 use databaseA;
 exec cdcx.[Setup.Database] 'this'; --  Will create syonyms required by cdcx for objects which exist in databaseA
+exec cdcx.[Setup.Database] 'this'; --  running it multiple times with the same arguments is fine, it's idempotent.
 exec cdcx.[Setup.Database] 'B', 'databaseB'; -- will create synonyms required by cdcx for objects which exist in databaseB
 ```
 ---
