@@ -10,6 +10,8 @@ A default value of "CDCX" is already provided for `CDCX_SCHEMA_NAME`, but you ca
 
 After `cdcx_setup.sql` has been executed, you can use the "Setup" procedures it created to start creating CDCX helpers for change data capture tables in this, or other, databases.
 
+---
+
 First `exec cdcx.[Setup.Database] @dbAlias, @cdcDbName`
 
 `@dbAlias (sysname)` :
@@ -26,7 +28,9 @@ The name of the cdc-enabled database to which you want to refer.
 If the cdc-enabled database is the same database into which you ran cdcx_setup.sql, you do not have to pass this parameter.
 </ul>
 
-Note that you can run `cdcx.[Setup.Database]` multiple times for different databases with different aliases if you want to. 
+##Note 
+
+You can run `cdcx.[Setup.Database]` multiple times for different databases with different aliases if you want to. 
 
 For example, if you installed cdcx into "databaseA", and you want to use cdcx to help you with objects in both "databaseA" and "databaseB", you can do this:
 
