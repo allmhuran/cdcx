@@ -11,7 +11,9 @@ The CDCX implementation is significantly faster than the microsoft implementatio
 It also provides a much more convenient way of specifying the "columns you care about". With the microsoft implementation you must `fn_cdc_is_bit_set(fn_cdc_get_column_ordinal(...`.\
 In the CDCX approach you use a helper procedure to create a bitmask reprsenting columns you care about, and pass that into the `.Changes` or `.Net` function as a parameter.
 
-Since CDCX is a layer of abstraction over change data capture, it is also able to make changes to CDC relatively transparent.
+CDCX also provides a convenient an efficient way to get the "before" values of columns. The CDCX `.Net` implementation returns the `__$start_lsn`, `__$operation` and `__$seqval` of the "before" version of the net change. Just join `.Net` to `.Changes` and select the "before" values for columns you're interested in, on the same output row as the "after" values.
+
+Finally, since CDCX is a layer of abstraction over change data capture, it is also able to make changes to CDC relatively transparent.
 
 For example, suppose you needed to alter the columns being tracked by CDC. To do this you must create a second capture instance. In the MS implementation, you now have to change all of the code that was using `get_net_changes` to instead refer to the other capture instance (or both), and once you don't need the old capture instance any more, you need to change all of your code *again*.
 
