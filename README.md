@@ -28,7 +28,7 @@ The name of the cdc-enabled database to which you want to refer.
 If the cdc-enabled database is the same database into which you ran cdcx_setup.sql, you do not have to pass this parameter.
 </ul>
 
-## Note 
+### Note 
 
 You can run `cdcx.[Setup.Database]` multiple times for different databases with different aliases if you want to. 
 
