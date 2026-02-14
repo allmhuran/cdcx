@@ -33,10 +33,11 @@ Given...
 exec cdcx.[Setup.Database] 'MyAlias', 'MyDb';
 
 exec cdcx.[Setup.Table] 'MyAlias', 'dbo', 'T';
-|
-- in this example I will pass 0x0 as the "previous end LSN".
+
+-- In this example I will pass 0x0 as the "previous end LSN".
+-- I will also use GetParamsByList and pass in a character separated string representing the columns for which I care about changes.
 declare @startLsn binary(10), @endLsn binary(10), @mask1 varbinary(128), @mask2 varbinary(128), @changesMIssed bit;
-exec cdcx.[MyAlias.GetParams] 'dbo', 't', 0x0, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output; -
+exec cdcx.[MyAlias.GetParamsByList] 'dbo', 't', 'j, k', ',' 0x0, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output; -
 
 -- cdcx_deleted it a bit column; it will be 1 if the net change to the row is a deletion.
 -- You can also include any valid column in the source table in your select, even if it's not being tracked by CDC.
