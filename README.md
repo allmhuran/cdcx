@@ -80,5 +80,38 @@ The table name of the cdc-tracked table in the aliased database.
 </ul>
 
 `[Setup.Table]` will create new functions in your chosen cdcx schema:
-- `cdcx.[<your database alias>.<source schema name>.<source table name>.Changes]()`
-- `cdcx.[<your database alias>.<source schema name>.<source table name>.Net]()`
+- `cdcx.[<your database alias>.<source schema name>.<source table name>.Changes](@startLsn, @endLsn, @mask1, @mask2)`
+- `cdcx.[<your database alias>.<source schema name>.<source table name>.Net](@startLsn, @endLsn, @mask1, @mask2)`
+
+For both of these functions, the parameters are as follows:
+
+`@startLsn (binary(10))` :
+<ul>
+The first LSN, inclusive, from which changes in the CDC change table (or tables) will be returned.
+</ul>
+
+`@endLsn (binary(10))` :
+<ul>
+The last LSN, inclusive, from which changes in the CDC change table (or tables) will be returned.
+</ul>
+
+`@mask1 (varbinary(128)) = null` :
+<ul>
+A bitmask which specifiefs which columns you "care about" in the first capture table. Changes will only be returned for changes that involve this/these columns.
+</ul>
+
+`@mask2 (varbinary(128)) = null` :
+<ul>
+A bitmask which specifiefs which columns you "care about" in the second capture table (if a second capture table exists). 
+Changes will only be returned for changes that involve this/these columns.
+If a second capture table does not exist, this parameter can be `null`.
+</ul>
+
+**You might be thinking that you still have to worry about validating your LSN range. And how do you get the value for `@mask1`? And how do you know whether you need a value for `@mask2`, and how do you get that?**\
+Enter `GetParams`.
+
+## `cdcx.[<your database alias>.GetParams]`
+
+blah
+
+
