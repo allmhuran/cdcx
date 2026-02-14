@@ -49,7 +49,8 @@ If the cdc-enabled database is the same database into which you ran cdcx_setup.s
 
 ### Note 
 
-You can run `cdcx.[Setup.Database]` multiple times for different databases with different aliases if you want to. 
+You can run `cdcx.[Setup.Database]` multiple times with the same arguments with no ill-effects (it is idempotent).\
+You can also run `cdcx.[Setup.Database]` multiple times for different databases with different aliases if you want to. 
 
 For example, if you installed cdcx into "databaseA", and you want to use cdcx to help you with objects in both "databaseA" and "databaseB", you can do this:
 
