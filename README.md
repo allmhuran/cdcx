@@ -6,7 +6,7 @@ Extensions to improve performance and developer experience when working SQL Serv
 
 CDCX provides an alternative to using the microsoft `fn_cdc_get_all_changes...` and `fn_cdc_get_net_changes...` functions when reading data from change data capture.
 
-The CDCX implementation is significantly faster than the microsoft implementation (about 2 times faster for small data sets, and at least 5 faster for large data sets).
+The CDCX implementation is significantly faster than the microsoft implementation (~2 times faster at ~10,000 rows, ~5 times faster at ~100,000 rows, ~10 times faster at ~1,000,000 rows).
 
 It also provides a much more convenient way of specifying the "columns you care about". With the microsoft implementation you must `fn_cdc_is_bit_set(fn_cdc_get_column_ordinal(...`.\
 In the CDCX approach you use a helper procedure to create a bitmask reprsenting columns you care about, and pass that into the `.Changes` or `.Net` function as a parameter.
