@@ -49,6 +49,22 @@ exec cdcx.[MyAlias.GetParamsByList] 'dbo', 't', 'j, k', ',' 0x0, @startLsn outpu
 select  cdcx_deleted, i, j, k 
 from    cdcx.[MyAlias.dbo.T.Net](@startLsn, @endLsn, @mask1, @mask2)
 option  (recompile); -- recommended
+
+-- If you want all changes instead of net changes, use .Changes instead of .Net.
+-- .Changes still returns the cdcx_deleted column. It will be 1 if the operation in the change table was a delate, or a "before update" row (__$operation 1 or 3).
+
+select  cdcx_deleted, i, j, k 
+from    cdcx.[MyAlias.dbo.T.C](@startLsn, @endLsn, @mask1, @mask2)
+option  (recompile); -- recommended
+
+-- Suppose you want net changes, and you also want the "before" value of column k:
+
+select  cdcx_deleted, n.i, n.j, n.k, original_value_of_k = before.k 
+from    cdcx.[MyAlias.dbo.T.Net](@startLsn, @endLsn, @mask1, @mask2) n
+join    cdcx.[MyAlias.dbo.T.Changes](@startLsn, @endLsn, null, null) before on before.__$start_lsn = n.cdcx_firstStartLsn
+                                                                               and before.__$operation = n.cdcx_firstOperation
+                                                                               and before.__$seqval = n.cdcx_firstSeqlVal
+option  (recompile); -- recommended
 ```
 
 # Installation
