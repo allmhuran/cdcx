@@ -10,7 +10,7 @@ A default value of "CDCX" is already provided for CDCX_SCHEMA_NAME, but you can 
 
 After cdcx_setup.sql has been executed, you can use the "Setup" objects it created to start creating CDCX helpers for change data capture tables in this, or other, databases.
 
-First `exec cdcx.[Setup.Database] @dbAlias sysname, @cdcDbName sysname`.
+First `exec cdcx.[Setup.Database] @dbAlias sysname, @cdcDbName sysname = null`
 
 `@dbAlias` :
 <ul>
