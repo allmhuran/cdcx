@@ -37,8 +37,7 @@ exec cdcx.[Setup.Database] 'MyAlias', 'MyDb';
 exec cdcx.[Setup.Table] 'MyAlias', 'dbo', 'T';
 
 -- In this example I will pass 0x0 as the "previous end LSN".
--- I will also use GetParamsByList and pass in the columns for which I care about changes
--- as a character separated string.
+-- I will also use GetParamsByList and pass in the columns where changes "matter" as a character separated string.
 
 declare @startLsn binary(10), @endLsn binary(10), @mask1 varbinary(128), @mask2 varbinary(128), @changesMIssed bit;
 exec cdcx.[MyAlias.GetParamsByList] 'dbo', 't', 'j, k', ',', 0x0, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output;
@@ -51,7 +50,7 @@ exec cdcx.[MyAlias.GetParamsByList] 'dbo', 't', 'j, k', ',', 0x0, @startLsn outp
 declare @columns cdcx.Sysnameset;
 insert @columns select columName from dbo.MyPersistedColumnNames;
 declare @startLsn binary(10), @endLsn binary(10), @mask1 varbinary(128), @mask2 varbinary(128), @changesMIssed bit;
-exec cdcx.[MyAlias.GetParamsByList] 'dbo', 't', @columns, 0x0, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output;
+exec cdcx.[MyAlias.GetParams] 'dbo', 't', @columns, 0x0, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output;
 
 -- cdcx_deleted is a bit column; it will be 1 if the net change to the row over the LSN window was deletion.
 -- You can also include any valid column in the source table in your select, even if it's not being tracked by CDC.
