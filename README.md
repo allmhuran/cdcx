@@ -63,8 +63,20 @@ select  n.cdcx_deleted, n.i, n.j, n.k, original_value_of_k = before.k
 from    cdcx.[MyAlias.dbo.T.Net](@startLsn, @endLsn, @mask1, @mask2) n
 join    cdcx.[MyAlias.dbo.T.Changes](@startLsn, @endLsn, null, null) before on before.__$start_lsn = n.cdcx_firstStartLsn
                                                                                and before.__$operation = n.cdcx_firstOperation
-                                                                               and before.__$seqval = n.cdcx_firstSeqlVal
+                                                                               and before.__$seqval = n.cdcx_firstSeqval
 option  (recompile); -- recommended
+
+-- You could also do that with cross apply...
+
+select      n.cdcx_deleted, n.i, n.j, n.k, original_value_of_k = before.k 
+from        cdcx.[MyAlias.dbo.T.Net](@startLsn, @endLsn, @mask1, @mask2) n
+cross apply (
+               select k
+               from   cdcx.[MyAlias.dbo.T.Changes](n.cdcx_firstStartLsn, n.cdcx_firstStartLsn, null, null)
+               where  __$operation = n.cdcx_firstOperation
+                      and __$seqval = n.cdcx_firstSeqval
+            ) before
+option      (recompile);             
 ```
 
 # Installation
