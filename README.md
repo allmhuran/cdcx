@@ -14,6 +14,7 @@ First run `cdcx.[Setup.Database](@dbAlias sysname, @cdcDbName sysname = null)`.
 
 term
 : definition
+more definition
 
 `@dbAlias` : <br/>
   A name that will be used throughout CDCX objects when referring to the database containing CDC objects you want CDCX to help you with.<br/>
