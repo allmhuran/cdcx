@@ -20,7 +20,7 @@ In the CDCX implementation, all of this is handled for you. One capture instance
 
 # Installation
 
-cdcx_setup.sql creates a "library" of objects in a database and schema of your choosing.
+The file `cdcx_setup.sql` creates a "library" of objects in a database and schema of your choosing.
 
 Run `cdcx_setup.sql` and provide values for the `CDCX_DB_NAME` and `CDCX_SCHEMA_NAME` sqlcmd variables (at the top of the file).\
 You can run this in the CDC enabled database, or on another database on the same SQL Server instance.
