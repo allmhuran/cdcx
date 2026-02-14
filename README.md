@@ -125,40 +125,40 @@ The table name of the cdc enabled source table
 
 `@columns (cdcx.sysnameset)` :
 <ul>
-A table valued parameter containing the column names you care about. (Note: you can also call `cdcx.[<your db alias>.GetParamsByList]` and pass a character separated list instead.
+A table valued parameter containing the column names you care about. (Note: you can also call cdcx.[<your db alias>.GetParamsByList] and pass a character separated string instead).
 </ul>
 
 `@previousEndLsn (binary(10))` :
 <ul>
-Where are you up to? This should be the same as the value of a previous `@endLsn` (normal sliding window semantics). CDCX will bounds-check this for you.
+Where are you up to? This should be the same as the value of a previous @endLsn (normal sliding window semantics). CDCX will bounds-check this for you.
 </ul>
 
 `@startLsn (binary(10) output)` :
 <ul>
-This output paramter provides a bounds-checked start LSN. Use as the input `@startLsn` parameter value for your next call to a cdcx `.Changes` or `.Net` function.
+This output paramter provides a bounds-checked start LSN. Use as the input @startLsn value for your next call to a cdcx .Changes or .Net function.
 </ul>
 
 `@endLsn (binary(10) output)` :
 <ul>
-This output paramter provides a new high watermark. Use as the input `@endLsn` parameter value for your next call to a cdcx `.Changes` or `.Net` function.
+This output paramter provides a new high watermark. Use as the input @endLsn value for your next call to a cdcx .Changes or .Net function.
 </ul>
 
 `@mask1 (varbinary(128) output)` :
 <ul>
-A bitmask representing the columns you care about. Use as the input `@mask1` parameter for your next call to cdcx `.Changes` or `.Net`.
+A bitmask representing the columns you care about. Use as the input @mask1 value for your next call to cdcx .Changes or .Net.
 </ul>
 
 `@mask2 (varbinary(128) output)` :
 <ul>
-A bitmask representing the columns you care about. Use as the input `@mask2` parameter for your next call to cdcx `.Changes` or `.Net`.
-If there is only one capture instance this parameter isn't needed. But you don't need to know that. Just call `GetParams` and hand off the output values to `.Changes` or `.Net`!  
+A bitmask representing the columns you care about. Use as the input @mask2 value for your next call to cdcx .Changes or .Net.
+(If there is only one capture instance this parameter isn't needed. But you don't need to know that. Just call GetParams and hand off the output values to .Changes or .Net!)
 </ul>
 
 `@mchangesMissed (bit) output)` :
 <ul>
 A bit value which indicates whether or not changes were missed.
-The `GetParams` function automatically bounds checks your LSN's for you.
-If your input `@previousEndLsn` represents a point that is no longer available in the underlying capture tables, it means you have missed some change data (it has aged-out of the capture tables).
+The GetParams procedure automatically bounds checks your LSN's for you.
+If your input @previousEndLsn represents a point that is no longer available in the underlying capture tables, it means you have missed some change data (it has aged-out of the capture tables).
 This output parameter provides you with a notification that this has happened, so you can take corrective action if needed.
 </ul>
 
