@@ -42,7 +42,7 @@ exec cdcx.[Setup.Table] 'MyAlias', 'dbo', 'T';
 declare @startLsn binary(10), @endLsn binary(10), @mask1 varbinary(128), @mask2 varbinary(128), @changesMIssed bit;
 exec cdcx.[MyAlias.GetParamsByList] 'dbo', 't', 'j, k', ',' 0x0, @startLsn output, @endLsn output, @mask1 output, @mask2 output, @changesMissed output;
 
--- cdcx_deleted it a bit column; it will be 1 if the net change to the row is a deletion.
+-- cdcx_deleted is a bit column; it will be 1 if the net change to the row over the LSN window was deletion.
 -- You can also include any valid column in the source table in your select, even if it's not being tracked by CDC.
 -- Cdcx will return nulls for columns that are unavailable in CDC.
 
