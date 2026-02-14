@@ -4,11 +4,11 @@ Extensions to improve performance and developer experience when working SQL Serv
 
 # Installation
 
-cdcx_setup.sql creates a "library" of objects in a database and schema of your choosing.
-Run cdcx_setup.sql and provide values for the CDCX_DB_NAME and CDCX_SCHEMA_NAME sqlcmd variables (at the top of the file). 
-A default value of "CDCX" is already provided for CDCX_SCHEMA_NAME, but you can change this.
+cdcx_setup.sql creates a "library" of objects in a database and schema of your choosing.\
+Run `cdcx_setup.sql` and provide values for the `CDCX_DB_NAME` and `CDCX_SCHEMA_NAME` sqlcmd variables (at the top of the file).\
+A default value of "CDCX" is already provided for `CDCX_SCHEMA_NAME`, but you can change this.
 
-After cdcx_setup.sql has been executed, you can use the "Setup" objects it created to start creating CDCX helpers for change data capture tables in this, or other, databases.
+After `cdcx_setup.sql` has been executed, you can use the "Setup" procedures it created to start creating CDCX helpers for change data capture tables in this, or other, databases.
 
 First `exec cdcx.[Setup.Database] @dbAlias, @cdcDbName`
 
