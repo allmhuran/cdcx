@@ -79,3 +79,6 @@ The schema name of the cdc-tracked table in the aliased database.
 The table name of the cdc-tracked table in the aliased database.  
 </ul>
 
+`[Setup.Table]` will create new functions in your chosen cdcx schema:
+- `cdcx.[<your database alias>.<source schema name>.<source table name>.Changes]()`
+- `cdcx.[<your database alias>.<source schema name>.<source table name>.Net]()`
