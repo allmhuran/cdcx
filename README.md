@@ -36,6 +36,27 @@ For example, if you installed cdcx into "databaseA", and you want to use cdcx to
 
 ```sql
 use databaseA;
-exec cdcx.[Setup.Database] 'this'; --  Will create syonyms required by cdcx for objects which exist in databaseA;
-exec cdcx.[Setup.Database] 'B', 'databaseB'; -- will create synonyms required by cdcx for objects which exist in databaseB;
+exec cdcx.[Setup.Database] 'this'; --  Will create syonyms required by cdcx for objects which exist in databaseA
+exec cdcx.[Setup.Database] 'B', 'databaseB'; -- will create synonyms required by cdcx for objects which exist in databaseB
 ```
+---
+
+Once you have run `cdcx.[Setup.Database]`, you can then run `cdcx.[Setup.Table]` for any table being tracked by CDC:
+
+`exec cdcx.[Setup.Table] @dbAlias, @schemaName, @tableName;`
+
+`@dbAlias (sysname)` :
+<ul>
+The alias used when you executed `[Setup.Database]`
+</ul>
+
+`@schemaName (sysname)` :
+<ul>
+The schema name of the cdc-tracked table in the aliased database.  
+</ul>
+
+`@tableName (sysname)` :
+<ul>
+The table name of the cdc-tracked table in the aliased database.  
+</ul>
+
