@@ -65,7 +65,7 @@ option  (recompile); -- recommended
 -- It will be 1 if the operation in the change table was a delate, or a "before update" row (__$operation 1 or 3).
 
 select  cdcx_deleted, i, j, k 
-from    cdcx.[MyAlias.dbo.T.C](@startLsn, @endLsn, @mask1, @mask2)
+from    cdcx.[MyAlias.dbo.T.Changes](@startLsn, @endLsn, @mask1, @mask2)
 option  (recompile); -- recommended
 
 -- Suppose you want net changes, and you also want the "before" value of column k:
