@@ -8,7 +8,7 @@
 :setvar CDCX_DB_NAME 
 
 -- name of the schema in which cdc extensions objects will be created
-:setvar CDCX_SCHEMA_NAME cdcx
+:setvar CDCX_SCHEMA_NAME 
 
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1103,7 +1103,6 @@ begin
    set nocount, xact_abort on;
 
    -- brief wait in case tables were enabled for cdc just before execution, which might mean cdc metadat is not yet available.
-   waitfor delay '00:00:04'; 
 
    declare 
       @separator nvarchar(64) = N'########',
@@ -1162,6 +1161,38 @@ begin
       throw 50001, @err, 1
 
    end catch      
+end
+go
+
+create or alter procedure [$(CDCX_SCHEMA_NAME)].[Setup.Tables](@dbAlias sysname) as
+begin
+   set nocount on;
+
+   create table #tables(schemaName sysname, tableName sysname);
+
+   declare @query nvarchar(max) = N'
+insert   #tables
+select   s.name, t.name
+from     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.change_tables]  ct
+join     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.tables]         t  on t.object_id = ct.source_object_id
+join     [$(CDCX_SCHEMA_NAME)].[@dbAlias?.sys.schemas]        s  on s.schema_id = t.schema_id';
+
+   set @query = replace(@query, '@dbAlias?', @dbAlias);
+   exec (@query);
+
+   declare @s sysname, @t sysname;
+
+   declare c cursor local fast_forward for select schemaName, tableName from #tables;
+   open c
+   fetch next from c into @s, @t;
+   while (@@fetch_status = 0)
+   begin
+      exec [$(CDCX_SCHEMA_NAME)].[Setup.Table] @dbAlias, @s, @t;
+      fetch next from c into @s, @t;
+   end
+   close c;
+   deallocate c;
+
 end
 go
 
