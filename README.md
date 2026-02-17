@@ -36,6 +36,8 @@ exec cdcx.[Setup.Database] 'MyAlias', 'MyDb';
 
 exec cdcx.[Setup.Table] 'MyAlias', 'dbo', 'T';
 
+-- you can also set up EVERY cdc enabled table at once: exec cdcx.[Setup.Tables] 'MyAlias';
+
 -- In this example I will pass 0x0 as the "previous end LSN".
 -- I will also use GetParamsByList and pass in the columns where changes "matter" as a character separated string.
 
