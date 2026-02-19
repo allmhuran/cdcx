@@ -1,4 +1,3 @@
---exec cdcx.[setup.uninstall] 'cdcx'
 
 -- CDCX SETUP
 :on error exit
@@ -49,13 +48,13 @@ go
 set noexec off;
 go
 
-if type_id('$(CDCX_SCHEMA_NAME).CdcColumnsOutput') is not null set noexec on;
-go
-create type [$(CDCX_SCHEMA_NAME)].CdcColumnsOutput as table (column_ordinal int, column_name sysname, key_ordinal int)
-go
-set noexec off;
-go
- 
+--if type_id('$(CDCX_SCHEMA_NAME).CdcColumnsOutput') is not null set noexec on;
+--go
+--create type [$(CDCX_SCHEMA_NAME)].CdcColumnsOutput as table (column_ordinal int, column_name sysname, key_ordinal int)
+--go
+--set noexec off;
+--go
+
 if type_id('$(CDCX_SCHEMA_NAME).SysnameSet') is not null set noexec on;
 go
 create type [$(CDCX_SCHEMA_NAME)].SysnameSet as table (v sysname primary key);
@@ -96,7 +95,7 @@ begin
    set xact_abort, nocount on;
 
    begin try
-
+   
       declare c cursor local fast_forward for 
       select    concat
                (
@@ -265,48 +264,6 @@ begin
 
    return cast(right(@mask, (@maxOrdinal / 8) + 1) as varbinary(128));
 end
-go
-
---create or alter function [$(CDCX_SCHEMA_NAME)].Changed(@operation int, @updateMask varbinary(128), @checkBits varbinary(128))
--- INCORPORATED INTO .CHANGES
---returns table
---with schemabinding as 
---/*
---   Returns a single row with a single column (cdcx_deleted, 1 or 0) if we care about the change represented by the operation, update mask, and checkbits.   
---   Otherwise will not return a row, and thus can be used as a filter.
-
---   This function is SOURCE AGNOSTIC since it accepts the cdc update mask as parameter. Once you're in here, it's just comparing one mask to another.
-
---   @updateMask is a representation of which columns actually changed. 
---   @checkBits is a representation of which columns we care about.
---   We need to bitwise-and these bit strings if the operation is an update.
-
---   Since only integer types (not binary types) can be bitwise-anded, we compare the relevant sections of the masks 
---   one byte at a time using a tally table to declaratively "iterate" over each byte and convert it to a tinyint.
---*/
---return
---(
---      select      cdcx_deleted = iif(@operation in (1, 3), 1, 0)
---      from        [$(CDCX_SCHEMA_NAME)].Integers ints
---      cross join  (values (datalength(@checkBits))) bits(length)
---      where       (
---                     @checkBits is null                                                                                          -- null filter => return all rows
---                     or 
---                     (
---                        ints.i between 1 and bits.length                                                                         -- no need to check bits that are outside of the bits we care about
---                        and
---                        (
---                           @operation in (1, 2)                                                                                  -- no need to check the masks for inserts or deletes
---                           or 
---                           (
---                              cast(substring(cast(right(@updateMask, bits.length) as varbinary(128)), ints.i, 1) as tinyint)     -- bitmasks are "right-aligned", but it's easier to taking substrings from the left, so align the bit fields on the left at the first relevant byte and get the byte
---                              & cast(substring(@checkBits, ints.i, 1) as tinyint)                                                -- the same byte from @checkBits
---                              > 0                                                                                                -- bitwise and of update mask byte and check byte > 0
---                           )
---                        )
---                     )                              
---                  )
---)
 go
 
 create or alter procedure [$(CDCX_SCHEMA_NAME)].[Setup.GetDbNameFromAlias](@dbAlias sysname, @dbName sysname output)
@@ -877,6 +834,12 @@ begin
    where    sc.name = @schemaName
             and tb.name = @tableName;
       
+   if (@@rowcount != 1)
+   begin
+      declare @err nvarchar(2048) = concat(''[@dbAlias?.GetParams] expected to find 1 change table matching schemaName '', @schemaName, '' tableName '', @tableName);
+      throw 50001, @err, 1;
+   end
+
    -- if the requested start lsn is prior to the min available then clamp the start to the min available and indicate that changes have been missed
 
    if (@startLsn < @minLsn) select @changesMissed = 1, @startLsn = @minLsn;
