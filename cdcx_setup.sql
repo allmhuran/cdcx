@@ -1,7 +1,5 @@
 
-/*
-exec cdcx.[setup.uninstall] 'cdcx'
-*/
+-- exec cdcx.[setup.uninstall] 'cdcx'
 
 -- CDCX SETUP
 :on error exit
