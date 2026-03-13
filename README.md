@@ -236,7 +236,7 @@ A bitmask representing the columns you care about. Use as the input @mask2 value
 (If there is only one capture instance this parameter isn't needed. But you don't need to know that. Just call GetParams and hand off the output values to .Changes or .Net!)
 </ul>
 
-`@mchangesMissed (bit) output)` :
+`@changesMissed (bit) output)` :
 <ul>
 A bit value which indicates whether or not changes were missed.
 The GetParams procedure automatically bounds checks your LSN's for you.
