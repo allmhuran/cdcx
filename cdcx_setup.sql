@@ -1,4 +1,8 @@
 
+/*
+exec cdcx.[setup.uninstall] 'cdcx'
+*/
+
 -- CDCX SETUP
 :on error exit
 
@@ -27,9 +31,8 @@ go
 set xact_abort, nocount on;
 go
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- Table valued types are created in a separate transaction avoid self-deadlocks. If deployment fails, these must be cleaned up separately!
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+go
 
 begin tran
 go
@@ -65,9 +68,8 @@ go
 commit;
 go
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 -- all CDCX objecs other than table valued types
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+go
 
 begin tran;
 go
@@ -591,7 +593,7 @@ return
    select      __$start_lsn,
                __$seqval,
                __$operation,
-               cdcx_deleted = iif(__$operation in (1, 3), 1, 0),
+               cdcx_deleted = cast(iif(__$operation in (1, 3), 1, 0) as bit),
                @instance1Expressions?
    from        [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.changeTables.@schemaName?.@tableName?.1]
    where       __$start_lsn between @startLsn and @endLsn
@@ -623,7 +625,7 @@ return
    select      __$start_lsn,
                __$seqval,
                __$operation,
-               cdcx_deleted = iif(__$operation in (1, 3), 1, 0),
+               cdcx_deleted = cast(iif(__$operation in (1, 3), 1, 0) as bit),
                @instance2Expressions?
    from        [$(CDCX_SCHEMA_NAME)].[@dbAlias?.cdc.changeTables.@schemaName?.@tableName?.2]
    where       __$start_lsn between @startLsn and @endLsn
@@ -708,7 +710,7 @@ create or alter function [$(CDCX_SCHEMA_NAME)].[@dbAlias?.@schemaName?.@tableNam
 returns table as
 return
 (
-   select      cdcx_deleted = iif(lastOp.__$operation = 1, 1, 0),
+   select      cdcx_deleted = cast(iif(lastOp.__$operation = 1, 1, 0) as bit),
                cdcx_firstStartLsn = firstOp.__$start_lsn,
                cdcx_firstSeqVal = firstOp.__$seqval,
                cdcx_firstOperation = firstOp.__$operation,
